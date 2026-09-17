@@ -11,6 +11,8 @@ from app.models.models import (
 )
 from app.schemas.schemas import DashboardSummaryResponse
 from app.core.config import settings
+from app.services.live_weather_service import fetch_live_current_weather
+from app.thermal.thermal_engine import WeatherInput, calculate_all_thermal_metrics
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
@@ -19,7 +21,8 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 def get_dashboard_summary(db: Session = Depends(get_db)):
     """
     Get comprehensive dashboard summary for the city.
-    Aggregates weather, thermal, risk, and alert data.
+    Weather values are fetched live from Open-Meteo (Jaipur) in real-time.
+    Risk/ward data comes from the database.
     """
     city = db.query(City).filter(City.name == "Jaipur").first()
     if not city:
@@ -29,26 +32,44 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
 
     wards = db.query(Ward).filter(Ward.city_id == city.id).all()
 
-    # Get latest weather for a representative ward (Ward 18 = showcase ward)
-    rep_ward = next((w for w in wards if w.ward_number == 18), wards[0] if wards else None)
+    # ── Step 1: Get LIVE weather from Open-Meteo ──────────────────────────────
+    live_wx = fetch_live_current_weather()
+    is_live = live_wx.get("data_source") in ("OPEN_METEO_LIVE", "OPEN_METEO")
 
-    latest_wx = None
-    latest_tm = None
-    if rep_ward:
-        latest_wx = (
-            db.query(WeatherData)
-            .filter(WeatherData.ward_id == rep_ward.id)
-            .order_by(WeatherData.timestamp.desc())
-            .first()
-        )
-        if latest_wx:
-            latest_tm = (
-                db.query(ThermalMetrics)
-                .filter(ThermalMetrics.weather_data_id == latest_wx.id)
-                .first()
-            )
+    # Compute thermal metrics from live weather
+    wx_input = WeatherInput(
+        temperature=live_wx["temperature"],
+        humidity=live_wx["humidity"],
+        wind_speed=live_wx["wind_speed"],
+        solar_radiation=live_wx.get("solar_radiation", 700.0),
+        heatwave_duration=live_wx.get("heatwave_day_number", 1),
+    )
+    live_thermal = calculate_all_thermal_metrics(wx_input)
 
-    # Aggregate risk across all wards
+    temp = live_wx["temperature"]
+    humidity = live_wx["humidity"]
+    wind_speed = live_wx["wind_speed"]
+    solar_radiation = live_wx.get("solar_radiation", 700.0)
+    heat_index = round(live_thermal.heat_index, 1)
+    wbgt = round(live_thermal.wbgt, 1)
+    htsi = round(live_thermal.htsi, 1)
+    utci = round(live_thermal.utci, 1) if live_thermal.utci else None
+
+    # Determine overall risk
+    if htsi >= 81:
+        overall_risk = "EXTREME"
+        htsi_level_str = "EXTREME"
+    elif htsi >= 66:
+        overall_risk = "HIGH"
+        htsi_level_str = "HIGH"
+    elif htsi >= 51:
+        overall_risk = "MODERATE"
+        htsi_level_str = "MODERATE"
+    else:
+        overall_risk = "LOW"
+        htsi_level_str = "LOW"
+
+    # ── Step 2: Aggregate risk counts from DB ────────────────────────────────
     risk_counts = {"EXTREME": 0, "HIGH": 0, "MODERATE": 0, "LOW": 0, "SAFE": 0}
     total_mortality = 0.0
     total_hosp = 0.0
@@ -80,13 +101,12 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
 
     active_alerts = db.query(Alert).filter(Alert.status == AlertStatusEnum.ACTIVE).count()
 
-    # System status
     system_status = {
         "backend": "HEALTHY",
         "database": "CONNECTED",
         "ml_engine": "READY",
         "gis": "LOADED",
-        "weather": "DEMO_MODE" if settings.DEMO_MODE else "LIVE",
+        "weather": "LIVE_OPEN_METEO" if is_live else "DEMO_MODE",
         "notifications": "SIMULATION_MODE" if settings.NOTIFICATION_MODE == "mock" else "LIVE",
     }
 
@@ -94,27 +114,23 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
         city=city.name,
         state=city.state,
         timestamp=datetime.now(timezone.utc).isoformat(),
-        data_source="DEMO",
+        data_source="OPEN_METEO_LIVE" if is_live else "DEMO_SYNTHETIC",
 
-        # Weather
-        temperature=latest_wx.temperature if latest_wx else 43.0,
-        humidity=latest_wx.humidity if latest_wx else 62.0,
-        wind_speed=latest_wx.wind_speed if latest_wx else 5.5,
-        solar_radiation=latest_wx.solar_radiation if latest_wx else 860.0,
+        temperature=temp,
+        humidity=humidity,
+        wind_speed=wind_speed,
+        solar_radiation=solar_radiation,
 
-        # Thermal
-        heat_index=latest_tm.heat_index if latest_tm else 55.2,
-        wbgt=latest_tm.wbgt if latest_tm else 34.1,
-        htsi=latest_tm.htsi if latest_tm else 85.0,
-        utci=latest_tm.utci if latest_tm else None,
+        heat_index=heat_index,
+        wbgt=wbgt,
+        htsi=htsi,
+        utci=utci,
 
-        # Risk
-        overall_risk_level="EXTREME" if (latest_tm and latest_tm.htsi and latest_tm.htsi >= 81) else "HIGH",
-        htsi_level=latest_tm.htsi_level.value if (latest_tm and latest_tm.htsi_level) else "HIGH",
+        overall_risk_level=overall_risk,
+        htsi_level=htsi_level_str,
         mortality_risk_score=round(avg_mortality, 1),
         hospitalization_risk_score=round(avg_hosp, 1),
 
-        # Counts
         total_wards=len(wards),
         extreme_wards=risk_counts.get("EXTREME", 0),
         high_wards=risk_counts.get("HIGH", 0),
@@ -126,3 +142,4 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
         highest_risk_ward_id=highest_risk_ward_id,
         system_status=system_status,
     )
+
