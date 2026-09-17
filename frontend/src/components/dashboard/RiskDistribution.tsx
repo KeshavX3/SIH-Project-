@@ -40,7 +40,7 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
 }) => {
   const [hoursRange, setHoursRange] = useState<number>(24);
   const [forecastList, setForecastList] = useState<HourlyForecastPoint[]>(FALLBACK_HOURLY_FORECAST);
-  const [dataSource, setDataSource] = useState<string>('LIVE METEOROLOGICAL FEED');
+  const [dataSource, setDataSource] = useState<string>('Live Weather');
   const [isHapModalOpen, setIsHapModalOpen] = useState<boolean>(false);
   const [isLoadingForecast, setIsLoadingForecast] = useState<boolean>(false);
 
@@ -53,9 +53,9 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
         if (isMounted && data && data.length > 0) {
           setForecastList(data);
           if (data[0]?.data_source?.includes('OPEN_METEO')) {
-            setDataSource('LIVE OPEN-METEO');
+            setDataSource('Live Weather');
           } else {
-            setDataSource('SIMULATED EARLY WARNING');
+            setDataSource('Simulated Data');
           }
         }
       } catch (err) {
@@ -265,14 +265,14 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
           </div>
         </div>
 
-        {/* Emergency SOP Quick Reference */}
+        {/* Active Protocols */}
         <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs space-y-1.5">
           <div className="flex items-center space-x-1.5 text-rose-400 font-bold text-[11px] uppercase tracking-wider">
             <AlertCircle className="w-3.5 h-3.5" />
-            Active Municipal Protocol
+            Active Protocols
           </div>
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            ORS distribution kiosks active at 12 transit junctions. Cool roof inspections ongoing in Old Jaipur Walled City.
+            ORS distribution at 12 transit points. Cool roof inspections ongoing in Old Jaipur Walled City.
           </p>
         </div>
       </div>

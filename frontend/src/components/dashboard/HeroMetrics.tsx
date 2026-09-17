@@ -29,35 +29,38 @@ export const HeroMetrics: React.FC<HeroMetricsProps> = ({ summary }) => {
 
   return (
     <div className="space-y-4">
-      {/* Top Banner: Real-time Heat Alert Status */}
-      <div className={`p-4 rounded-2xl glass-panel border ${htsiMeta.bg} flex flex-col md:flex-row items-start md:items-center justify-between gap-3`}>
+      {/* Top Banner: Real-time Heat Status */}
+      <div className={`p-4 rounded-2xl glass-panel border ${htsiMeta.bg} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}>
         <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-glow-red">
-            <AlertOctagon className="w-6 h-6 animate-pulse" />
+          <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+            <AlertOctagon className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
               <span className="font-display font-bold text-sm sm:text-base text-white">
-                MUNICIPAL HEAT ACTION ADVISORY
+                {htsiMeta.label}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-rose-500 text-white">
-                LEVEL 3 RED ALERT
+              <span
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase"
+                style={{ backgroundColor: htsiMeta.color + '22', color: htsiMeta.color, border: `1px solid ${htsiMeta.color}44` }}
+              >
+                HTSI {summary.htsi.toFixed(1)}
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Current peak thermal stress in <strong className="text-white">{summary.highest_risk_ward || 'Jaipur Central'}</strong>. IMD criteria: Severe Heatwave condition active.
+            <p className="text-xs text-slate-400 mt-0.5">
+              Peak thermal stress in <strong className="text-white">{summary.highest_risk_ward || 'Jaipur Central'}</strong>. {summary.active_alerts} active ward alerts detected.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 self-end md:self-auto">
+        <div className="flex items-center space-x-4 self-end sm:self-auto">
           <div className="text-right">
             <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Active Alerts</div>
             <div className="text-xl font-display font-extrabold text-rose-400">{summary.active_alerts} Wards</div>
           </div>
           <div className="h-8 w-px bg-white/10" />
           <div className="text-right">
-            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Affected Wards</div>
+            <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Affected</div>
             <div className="text-xl font-display font-extrabold text-amber-400">
               {summary.extreme_wards + summary.high_wards} / {summary.total_wards}
             </div>

@@ -15,7 +15,7 @@ import {
   DEMO_ALERTS
 } from './services/api';
 import { DashboardSummary, WardListItem, AlertItem } from './types';
-import { ShieldCheck, Info, Heart, Award } from 'lucide-react';
+import { ShieldCheck, Heart } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -130,24 +130,17 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-white/5 bg-[#05080E] py-6 text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="mt-auto border-t border-white/5 bg-[#05080E] py-5 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <Award className="w-4 h-4 text-rose-500" />
-            <span className="font-semibold text-slate-300">HeatGuard AI</span>
+            <Heart className="w-3.5 h-3.5 text-rose-500" />
+            <span className="font-medium text-slate-400">HeatGuard AI</span>
             <span>—</span>
-            <span>Smart India Hackathon (SIH26083)</span>
+            <span>Extreme Heat Early Warning Platform</span>
           </div>
-
-          <div className="flex items-center space-x-4 text-[11px] text-slate-400">
-            <span className="flex items-center gap-1">
-              <Info className="w-3.5 h-3.5 text-slate-400" />
-              Demo City: Jaipur, Rajasthan, India
-            </span>
-            <span>•</span>
-            <span className="text-slate-400">
-              Synthetic Meteorological Data Mode
-            </span>
+          <div className="flex items-center gap-1 text-[11px]">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Jaipur, Rajasthan · Real-time meteorological data</span>
           </div>
         </div>
       </footer>

@@ -32,11 +32,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   isRefreshing,
 }) => {
   const navItems = [
-    { id: 'overview', label: 'Command Center', icon: Activity },
-    { id: 'map', label: 'GIS Heat Stress Map', icon: MapPin },
-    { id: 'simulator', label: 'Thermal Simulator', icon: Sliders },
-    { id: 'wards', label: 'Ward Vulnerability', icon: BarChart3 },
-    { id: 'alerts', label: 'Early Warnings & SOPs', icon: AlertTriangle, badge: activeAlertCount },
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'map', label: 'Heat Map', icon: MapPin },
+    { id: 'simulator', label: 'Simulator', icon: Sliders },
+    { id: 'wards', label: 'Ward Data', icon: BarChart3 },
+    { id: 'alerts', label: 'Alerts', icon: AlertTriangle, badge: activeAlertCount },
   ];
 
   return (
@@ -57,8 +57,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-display font-extrabold text-lg tracking-tight text-white">
                   HeatGuard <span className="text-rose-500">AI</span>
                 </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded">
-                  SIH26083
+                <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">
+                  LIVE
                 </span>
               </div>
               <div className="flex items-center space-x-1 text-xs text-slate-400">
