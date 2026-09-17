@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -18,9 +18,14 @@ import {
   ChevronRight, 
   Clock, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Radio,
+  Zap
 } from 'lucide-react';
-import { DashboardSummary, WardListItem } from '../../types';
+import { DashboardSummary, WardListItem, HourlyForecastPoint } from '../../types';
+import { fetchHourlyForecast, FALLBACK_HOURLY_FORECAST } from '../../services/api';
+import { HeatActionPlanModal } from './HeatActionPlanModal';
 
 interface RiskDistributionProps {
   summary: DashboardSummary;
@@ -28,23 +33,51 @@ interface RiskDistributionProps {
   onSelectWard: (wardId: number) => void;
 }
 
-// 72-hour simulated forecast trend for Jaipur
-const FORECAST_TREND = [
-  { time: '06:00', temp: 34.2, htsi: 58.0, wbgt: 28.5 },
-  { time: '09:00', temp: 38.5, htsi: 72.1, wbgt: 31.2 },
-  { time: '12:00', temp: 43.1, htsi: 85.4, wbgt: 33.8 },
-  { time: '15:00', temp: 44.6, htsi: 89.2, wbgt: 34.9 },
-  { time: '18:00', temp: 41.8, htsi: 79.5, wbgt: 32.4 },
-  { time: '21:00', temp: 37.0, htsi: 67.2, wbgt: 29.8 },
-  { time: '00:00', temp: 34.8, htsi: 61.0, wbgt: 28.0 },
-  { time: '03:00', temp: 33.2, htsi: 56.4, wbgt: 27.2 },
-];
-
 export const RiskDistribution: React.FC<RiskDistributionProps> = ({
   summary,
   wards,
   onSelectWard,
 }) => {
+  const [hoursRange, setHoursRange] = useState<number>(24);
+  const [forecastList, setForecastList] = useState<HourlyForecastPoint[]>(FALLBACK_HOURLY_FORECAST);
+  const [dataSource, setDataSource] = useState<string>('LIVE METEOROLOGICAL FEED');
+  const [isHapModalOpen, setIsHapModalOpen] = useState<boolean>(false);
+  const [isLoadingForecast, setIsLoadingForecast] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadForecast() {
+      setIsLoadingForecast(true);
+      try {
+        const data = await fetchHourlyForecast(hoursRange);
+        if (isMounted && data && data.length > 0) {
+          setForecastList(data);
+          if (data[0]?.data_source?.includes('OPEN_METEO')) {
+            setDataSource('LIVE OPEN-METEO');
+          } else {
+            setDataSource('SIMULATED EARLY WARNING');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load forecast', err);
+      } finally {
+        if (isMounted) setIsLoadingForecast(false);
+      }
+    }
+    loadForecast();
+    return () => { isMounted = false; };
+  }, [hoursRange]);
+
+  // Transform data points for clean Recharts display
+  const chartData = forecastList.map((pt) => ({
+    time: hoursRange > 24 ? pt.label : pt.short_time,
+    temp: pt.temperature,
+    htsi: pt.htsi,
+    wbgt: pt.wbgt,
+    heat_index: pt.heat_index,
+    risk: pt.risk_level,
+  }));
+
   const riskCategories = [
     { label: 'EXTREME', count: summary.extreme_wards, color: '#EF4444', desc: 'HTSI ≥ 81' },
     { label: 'HIGH', count: summary.high_wards, color: '#F97316', desc: 'HTSI 66-80' },
@@ -53,85 +86,130 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      {/* 2-Col Left: 72-Hour Diurnal Heatwave Forecast & Stress Trend */}
-      <div className="lg:col-span-2 glass-panel p-5 rounded-2xl border border-white/10 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" />
-              Diurnal Heat Stress Forecast & HTSI Curve (Next 24 Hours)
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              High-resolution hourly simulation of air temperature and human thermal stress peak times.
-            </p>
-          </div>
-          <span className="hidden sm:inline px-2.5 py-1 text-[11px] font-mono rounded bg-slate-800 text-slate-300 border border-white/5">
-            Peak Window: 13:00 - 16:30
-          </span>
-        </div>
-
-        <div className="h-64 w-full pt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={FORECAST_TREND} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="time" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'rgba(15, 23, 42, 0.95)', 
-                  borderColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: '8px',
-                  color: '#f8fafc',
-                  fontSize: '12px'
-                }} 
-              />
-              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-              <Line 
-                type="monotone" 
-                dataKey="htsi" 
-                name="HTSI (Thermal Stress 0-100)" 
-                stroke="#EF4444" 
-                strokeWidth={3} 
-                dot={{ r: 4, fill: '#EF4444' }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="temp" 
-                name="Air Temp (°C)" 
-                stroke="#F59E0B" 
-                strokeWidth={2} 
-                dot={{ r: 3, fill: '#F59E0B' }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="wbgt" 
-                name="WBGT (°C)" 
-                stroke="#06B6D4" 
-                strokeWidth={2} 
-                strokeDasharray="4 4"
-                dot={{ r: 3, fill: '#06B6D4' }} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Severity Distribution Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/5">
-          {riskCategories.map((cat) => (
-            <div key={cat.label} className="p-2.5 rounded-xl bg-slate-900/50 border border-white/5 text-center">
-              <div className="text-[10px] font-mono text-slate-400">{cat.desc}</div>
-              <div className="text-xl font-display font-extrabold" style={{ color: cat.color }}>
-                {cat.count} Wards
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* 2-Col Left: 72-Hour Diurnal Heatwave Forecast & Stress Trend */}
+        <div className="lg:col-span-2 glass-panel p-5 rounded-2xl border border-white/10 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  Predictive Heat Stress Early Warning Forecast
+                </h3>
+                <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <Radio className="w-2.5 h-2.5 animate-pulse" />
+                  {dataSource}
+                </span>
               </div>
-              <div className="text-[10px] font-bold tracking-wider" style={{ color: cat.color }}>
-                {cat.label}
-              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Hourly biometeorological forecast calculating thermal stress (HTSI), apparent temperature & WBGT.
+              </p>
             </div>
-          ))}
+
+            {/* Range Toggle & NDMA Protocol Button */}
+            <div className="flex items-center space-x-2">
+              <div className="bg-slate-900/90 p-1 rounded-xl border border-white/10 flex text-[11px] font-semibold">
+                <button
+                  onClick={() => setHoursRange(24)}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    hoursRange === 24 ? 'bg-amber-500 text-black shadow-sm font-bold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  24h
+                </button>
+                <button
+                  onClick={() => setHoursRange(48)}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    hoursRange === 48 ? 'bg-amber-500 text-black shadow-sm font-bold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  48h
+                </button>
+                <button
+                  onClick={() => setHoursRange(72)}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    hoursRange === 72 ? 'bg-amber-500 text-black shadow-sm font-bold' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  72h Warning
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsHapModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                title="Open NDMA Heat Action Plan Guidelines"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">NDMA Action Plan</span>
+                <span className="sm:hidden">HAP</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="h-64 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="time" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                    borderColor: 'rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    color: '#f8fafc',
+                    fontSize: '12px'
+                  }} 
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                <Line 
+                  type="monotone" 
+                  dataKey="htsi" 
+                  name="HTSI (Thermal Stress 0-100)" 
+                  stroke="#EF4444" 
+                  strokeWidth={3} 
+                  dot={hoursRange <= 24 ? { r: 3, fill: '#EF4444' } : false} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="temp" 
+                  name="Air Temp (°C)" 
+                  stroke="#F59E0B" 
+                  strokeWidth={2} 
+                  dot={hoursRange <= 24 ? { r: 2.5, fill: '#F59E0B' } : false} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="wbgt" 
+                  name="WBGT (°C)" 
+                  stroke="#06B6D4" 
+                  strokeWidth={2} 
+                  strokeDasharray="4 4"
+                  dot={hoursRange <= 24 ? { r: 2.5, fill: '#06B6D4' } : false} 
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Severity Distribution Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-white/5">
+            {riskCategories.map((cat) => (
+              <div key={cat.label} className="p-2.5 rounded-xl bg-slate-900/50 border border-white/5 text-center">
+                <div className="text-[10px] font-mono text-slate-400">{cat.desc}</div>
+                <div className="text-xl font-display font-extrabold" style={{ color: cat.color }}>
+                  {cat.count} Wards
+                </div>
+                <div className="text-[10px] font-bold tracking-wider" style={{ color: cat.color }}>
+                  {cat.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+
 
       {/* 1-Col Right: Priority Wards Leaderboard */}
       <div className="glass-panel p-5 rounded-2xl border border-white/10 flex flex-col justify-between space-y-4">
@@ -200,5 +278,14 @@ export const RiskDistribution: React.FC<RiskDistributionProps> = ({
       </div>
 
     </div>
+
+    {/* Bilingual NDMA Heat Action Plan Modal */}
+    <HeatActionPlanModal
+      isOpen={isHapModalOpen}
+      onClose={() => setIsHapModalOpen(false)}
+      currentRiskLevel={summary.overall_risk_level}
+    />
+  </>
   );
 };
+

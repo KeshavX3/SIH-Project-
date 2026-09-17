@@ -353,3 +353,164 @@ export async function calculateThermalStress(params: ThermalCalculationRequest):
     return calculateClientThermal(params);
   }
 }
+
+// ─── Live Hourly Forecast & Early Warning ───────────────────────────────────
+
+export async function fetchHourlyForecast(hours: number = 72): Promise<HourlyForecastPoint[]> {
+  try {
+    const res = await client.get<HourlyForecastResponse>(`/api/weather/hourly-forecast?hours=${hours}`);
+    if (res.data && res.data.hourly && res.data.hourly.length > 0) {
+      return res.data.hourly;
+    }
+    return FALLBACK_HOURLY_FORECAST.slice(0, hours);
+  } catch (err) {
+    console.warn('Hourly forecast API unreachable, using simulated early-warning curve', err);
+    return FALLBACK_HOURLY_FORECAST.slice(0, hours);
+  }
+}
+
+export const FALLBACK_HOURLY_FORECAST: HourlyForecastPoint[] = [
+  { time: '2026-06-15T06:00', label: 'Day 1 06:00', short_time: '06:00', date: 'Day 1', temperature: 33.5, humidity: 55, wind_speed: 6.0, solar_radiation: 120, heat_index: 39.2, wbgt: 27.5, htsi: 54.2, risk_level: 'MODERATE', data_source: 'SIMULATED' },
+  { time: '2026-06-15T09:00', label: 'Day 1 09:00', short_time: '09:00', date: 'Day 1', temperature: 38.2, humidity: 44, wind_speed: 8.2, solar_radiation: 620, heat_index: 46.5, wbgt: 30.8, htsi: 71.4, risk_level: 'HIGH', data_source: 'SIMULATED' },
+  { time: '2026-06-15T12:00', label: 'Day 1 12:00', short_time: '12:00', date: 'Day 1', temperature: 43.1, humidity: 32, wind_speed: 10.5, solar_radiation: 890, heat_index: 52.8, wbgt: 33.4, htsi: 84.8, risk_level: 'EXTREME', data_source: 'SIMULATED' },
+  { time: '2026-06-15T15:00', label: 'Day 1 15:00', short_time: '15:00', date: 'Day 1', temperature: 44.8, humidity: 28, wind_speed: 12.0, solar_radiation: 780, heat_index: 55.4, wbgt: 34.6, htsi: 89.1, risk_level: 'EXTREME', data_source: 'SIMULATED' },
+  { time: '2026-06-15T18:00', label: 'Day 1 18:00', short_time: '18:00', date: 'Day 1', temperature: 41.5, humidity: 35, wind_speed: 9.0, solar_radiation: 250, heat_index: 48.6, wbgt: 32.1, htsi: 78.3, risk_level: 'HIGH', data_source: 'SIMULATED' },
+  { time: '2026-06-15T21:00', label: 'Day 1 21:00', short_time: '21:00', date: 'Day 1', temperature: 37.0, humidity: 42, wind_speed: 7.0, solar_radiation: 0, heat_index: 43.2, wbgt: 29.4, htsi: 65.5, risk_level: 'MODERATE', data_source: 'SIMULATED' },
+  { time: '2026-06-16T00:00', label: 'Day 2 00:00', short_time: '00:00', date: 'Day 2', temperature: 34.8, humidity: 48, wind_speed: 5.5, solar_radiation: 0, heat_index: 40.1, wbgt: 28.0, htsi: 59.2, risk_level: 'MODERATE', data_source: 'SIMULATED' },
+  { time: '2026-06-16T03:00', label: 'Day 2 03:00', short_time: '03:00', date: 'Day 2', temperature: 33.0, humidity: 52, wind_speed: 5.0, solar_radiation: 0, heat_index: 38.0, wbgt: 27.1, htsi: 55.0, risk_level: 'MODERATE', data_source: 'SIMULATED' },
+  { time: '2026-06-16T06:00', label: 'Day 2 06:00', short_time: '06:00', date: 'Day 2', temperature: 34.2, humidity: 50, wind_speed: 6.2, solar_radiation: 140, heat_index: 40.5, wbgt: 28.2, htsi: 57.8, risk_level: 'MODERATE', data_source: 'SIMULATED' },
+  { time: '2026-06-16T12:00', label: 'Day 2 12:00', short_time: '12:00', date: 'Day 2', temperature: 44.2, humidity: 30, wind_speed: 11.0, solar_radiation: 910, heat_index: 54.6, wbgt: 34.2, htsi: 87.5, risk_level: 'EXTREME', data_source: 'SIMULATED' },
+  { time: '2026-06-16T15:00', label: 'Day 2 15:00', short_time: '15:00', date: 'Day 2', temperature: 45.4, humidity: 26, wind_speed: 12.5, solar_radiation: 810, heat_index: 57.2, wbgt: 35.1, htsi: 92.0, risk_level: 'EXTREME', data_source: 'SIMULATED' },
+  { time: '2026-06-17T12:00', label: 'Day 3 12:00', short_time: '12:00', date: 'Day 3', temperature: 43.8, humidity: 33, wind_speed: 10.0, solar_radiation: 880, heat_index: 54.1, wbgt: 33.9, htsi: 86.4, risk_level: 'EXTREME', data_source: 'SIMULATED' },
+  { time: '2026-06-17T15:00', label: 'Day 3 15:00', short_time: '15:00', date: 'Day 3', temperature: 44.9, humidity: 29, wind_speed: 11.5, solar_radiation: 790, heat_index: 56.0, wbgt: 34.8, htsi: 90.3, risk_level: 'EXTREME', data_source: 'SIMULATED' },
+];
+
+// ─── NDMA Heat Action Plan (HAP) Bilingual Protocols ────────────────────────
+
+export const NDMA_PROTOCOLS = [
+  {
+    tier: 'NORMAL',
+    color: '#10B981',
+    threshold_temp: '< 40.0°C',
+    threshold_hi: 'HI < 41°C',
+    title_en: 'Green Alert (Normal Season / Pre-Heatwave)',
+    title_hi: 'ग्रीन अलर्ट (सामान्य स्थिति / पूर्व तैयारी)',
+    municipal_actions_en: [
+      'Maintain continuous water tanker readiness across urban slums and informal settlements.',
+      'Check availability of ORS packets and IV fluids at all Urban Primary Health Centers (UPHCs).',
+      'Conduct community awareness workshops on heat stroke signs with ASHA & Anganwadi workers.',
+    ],
+    municipal_actions_hi: [
+      'शहरी कच्ची बस्तियों और झुग्गियों में पानी के टैंकरों की पूर्व उपलब्धता सुनिश्चित करें।',
+      'सभी प्राथमिक स्वास्थ्य केंद्रों (UPHC) पर ओआरएस (ORS) और आवश्यक दवाओं का स्टॉक रखें।',
+      'आशा और आंगनवाड़ी कार्यकर्ताओं द्वारा लू से बचाव के प्रति जन-जागरूकता अभियान चलाएं।',
+    ],
+    citizen_advisories_en: [
+      'Drink plenty of water even if not feeling thirsty. Carry reusable water bottles.',
+      'Wear lightweight, loose-fitting, light-colored cotton clothing.',
+      'Schedule heavy outdoor activities during cooler morning and evening hours.',
+    ],
+    citizen_advisories_hi: [
+      'प्यास न लगने पर भी नियमित रूप से पानी पिएं और बाहर जाते समय पानी की बोतल साथ रखें।',
+      'हल्के रंग के, ढीले और सूती कपड़े पहनें।',
+      'कठिन शारीरिक कार्य सुबह या शाम के ठंडे समय में ही करें।',
+    ],
+    vulnerable_groups_en: ['Elderly with cardiovascular conditions', 'Infants & toddlers', 'Outdoor gig workers'],
+    vulnerable_groups_hi: ['हृदय रोगी व बुजुर्ग नागरिक', 'छोटे बच्चे व शिशु', 'डिलीवरी बॉय एवं आउटडोर वर्कर्स'],
+  },
+  {
+    tier: 'YELLOW',
+    color: '#EAB308',
+    threshold_temp: '40.1°C – 42.9°C',
+    threshold_hi: 'HI 41°C – 53°C',
+    title_en: 'Yellow Alert (Heat Alert / Watch)',
+    title_hi: 'येलो अलर्ट (निगरानी व सतर्कता चेतावनी)',
+    municipal_actions_en: [
+      'Deploy shaded waiting shelters at major Jaipur bus stations (Sindhi Camp, Narayan Singh Circle).',
+      'Instruct construction site contractors to mandate 15-minute shaded rest breaks every hour.',
+      'Alert SMS broadcasts to registered registered street vendors and delivery personnel.',
+    ],
+    municipal_actions_hi: [
+      'सिंधी कैंप और प्रमुख बस स्टैंडों पर छायादार शेल्टर और ठंडे पेयजल की व्यवस्था करें।',
+      'निर्माण स्थलों पर मजदूरों के लिए प्रति घंटे 15 मिनट का छायादार विश्राम अनिवार्य करें।',
+      'स्ट्रीट वेंडरों और गिग वर्करों को एसएमएस (SMS) द्वारा सतर्कता संदेश भेजें।',
+    ],
+    citizen_advisories_en: [
+      'Avoid direct exposure to the sun between 12:00 PM and 3:00 PM.',
+      'Cover head with a cloth, hat, or umbrella when stepping outdoors.',
+      'Never leave children or pets inside a parked automobile under direct sunlight.',
+    ],
+    citizen_advisories_hi: [
+      'दोपहर 12:00 बजे से 3:00 बजे के बीच सीधी धूप में जाने से बचें।',
+      'धूप में निकलते समय सिर को सूती कपड़े, गमछे या टोपी से ढकें।',
+      'बंद वाहन में बच्चों या पालतू जानवरों को अकेला कभी न छोड़ें।',
+    ],
+    vulnerable_groups_en: ['Traffic police personnel', 'Daily wage construction laborers', 'Pregnant women'],
+    vulnerable_groups_hi: ['ट्रैफिक पुलिस कर्मी', 'दैनिक मजदूरी वाले निर्माण श्रमिक', 'गर्भवती महिलाएं'],
+  },
+  {
+    tier: 'ORANGE',
+    color: '#F97316',
+    threshold_temp: '43.0°C – 44.9°C',
+    threshold_hi: 'HI 54°C – 65°C',
+    title_en: 'Orange Alert (Severe Heatwave Warning)',
+    title_hi: 'ऑरेंज अलर्ट (तीव्र लू की गंभीर चेतावनी)',
+    municipal_actions_en: [
+      'Open air-conditioned municipal cooling centers across high-density wards (Walled City, Sanganer).',
+      'Reschedule government and outdoor road construction work: halt all operations from 11:30 AM to 3:30 PM.',
+      'Equip 108 Emergency Ambulances with ice packs and specialized heat-exhaustion resuscitation kits.',
+    ],
+    municipal_actions_hi: [
+      'चारदीवारी (पुराना जयपुर) और सांगानेर जैसी घनी बस्तियों में वातानुकूलित कूलिंग शेल्टर खोलें।',
+      'सड़क और सरकारी निर्माण कार्यों का समय बदलें: सुबह 11:30 से दोपहर 3:30 तक काम बंद रखें।',
+      '108 एम्बुलेंस में आइस पैक्स और हीट स्ट्रोक प्राथमिक उपचार किट तैनात रखें।',
+    ],
+    citizen_advisories_en: [
+      'High risk of heat cramps, exhaustion, and heatstroke. Minimize outdoor movement.',
+      'Consume ORS, homemade drinks (lemon water, chaas, lassi, coconut water) continuously.',
+      'If feeling dizzy, nauseous, or experiencing rapid heartbeat, seek immediate medical shade.',
+    ],
+    citizen_advisories_hi: [
+      'लू लगने और बेहोश होने का भारी जोखिम। गैर-जरूरी कार्य से बाहर न निकलें।',
+      'ओआरएस, छाछ, नींबू पानी, आम पन्ना और नारियल पानी का निरंतर सेवन करें।',
+      'चक्कर, उल्टी या अत्यधिक पसीना आने पर तुरंत ठंडी छाया में जाएं और चिकित्सक से संपर्क करें।',
+    ],
+    vulnerable_groups_en: ['Rickshaw pullers & e-rickshaw drivers', 'Elderly living without AC/coolers', 'Industrial zone workers'],
+    vulnerable_groups_hi: ['ई-रिक्शा व ऑटो चालक', 'बिना कूलर/एसी के रहने वाले बुजुर्ग', 'औद्योगिक क्षेत्र के श्रमिक'],
+  },
+  {
+    tier: 'RED',
+    color: '#EF4444',
+    threshold_temp: '≥ 45.0°C or Prolonged Duration',
+    threshold_hi: 'HI > 65°C / HTSI ≥ 81',
+    title_en: 'Red Alert (Extreme Heat Emergency / Disaster Phase)',
+    title_hi: 'रेड अलर्ट (अति गंभीर लू आपातकाल / आपदा चरण)',
+    municipal_actions_en: [
+      'Immediate enforcement: Complete shutdown of all non-essential outdoor manual labor 11:00 AM – 4:00 PM.',
+      'Deploy municipal fire tenders and water misting trucks across arterial roads to reduce ambient road surface temperature.',
+      'Activate dedicated Heat Emergency Response Wards at SMS Hospital, Jaipur and district satellite hospitals.',
+      'Continuous broadcast of emergency heat warnings across city public address systems, radio, and electronic billboards.',
+    ],
+    municipal_actions_hi: [
+      'तत्काल आदेश: सुबह 11:00 से शाम 4:00 बजे तक समस्त आउटडोर शारीरिक श्रम पूर्णतः प्रतिबंधित।',
+      'मुख्य सड़कों की सतह का तापमान घटाने के लिए नगर निगम के पानी छिड़कने वाले टैंकर चलाएं।',
+      'सवाई मानसिंह (SMS) अस्पताल एवं सभी जिला अस्पतालों में विशेष हीटस्ट्रोक इमरजेंसी वार्ड सक्रिय करें।',
+      'शहर के लाउडस्पीकरों, एफएम रेडियो और डिजिटल बिलबोर्ड्स पर आपातकालीन लू चेतावनी प्रसारित करें।',
+    ],
+    citizen_advisories_en: [
+      'LIFE THREATENING EMERGENCY. Extreme danger of fatal heat stroke.',
+      'Stay indoors in the coolest available room. Use wet towels on forehead and neck.',
+      'Avoid high-protein foods and alcohol which increase metabolic heat production.',
+      'Check in on elderly neighbors twice daily.',
+    ],
+    citizen_advisories_hi: [
+      'जानलेवा आपातकाल। हीट स्ट्रोक (लू) से मृत्यु का अत्यधिक खतरा।',
+      'घर के सबसे ठंडे कमरे में ही रहें। माथे और गर्दन पर गीली पट्टी का इस्तेमाल करें।',
+      'अत्यधिक तेल-मसालेदार भोजन और शराब से बचें जो शरीर का तापमान बढ़ाते हैं।',
+      'अपने आसपास के बुजुर्गों और अकेले रहने वाले पड़ोसियों की दिन में दो बार कुशलक्षेम लें।',
+    ],
+    vulnerable_groups_en: ['Entire outdoor population', 'Patients with diabetes, kidney or heart illness', 'Slum residents without ventilation'],
+    vulnerable_groups_hi: ['बाहर काम करने वाले सभी नागरिक', 'किडनी, शुगर या बीपी के मरीज', 'बिना हवादार आवास वाले निवासी'],
+  },
+];
+

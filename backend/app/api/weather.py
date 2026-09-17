@@ -7,17 +7,38 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.models.models import City, WeatherData, ForecastData
-from app.schemas.schemas import WeatherResponse, ForecastDayResponse
+from app.schemas.schemas import WeatherResponse, ForecastDayResponse, HourlyForecastResponse, HourlyForecastPoint
 from app.services.demo_weather_provider import get_base_weather, get_5day_forecast
+from app.services.live_weather_service import fetch_live_current_weather, fetch_hourly_forecast
 
 router = APIRouter(prefix="/api/weather", tags=["Weather"])
 
 
 @router.get("/current", response_model=WeatherResponse)
-def get_current_weather(db: Session = Depends(get_db)):
-    """Get current weather for Jaipur (latest from DB or demo provider)."""
+def get_current_weather(mode: str = "auto", db: Session = Depends(get_db)):
+    """
+    Get current weather for Jaipur.
+    mode="live": Always pull from Open-Meteo live feed.
+    mode="auto": DB if available, fallback to live or demo.
+    mode="demo": Forced deterministic synthetic heatwave.
+    """
+    if mode == "live":
+        live = fetch_live_current_weather()
+        return WeatherResponse(
+            timestamp=live["timestamp"],
+            temperature=live["temperature"],
+            humidity=live["humidity"],
+            wind_speed=live["wind_speed"],
+            solar_radiation=live["solar_radiation"],
+            pressure=live.get("pressure"),
+            cloud_cover=live.get("cloud_cover"),
+            heatwave_day_number=live.get("heatwave_day_number", 0),
+            data_source=live.get("data_source", "OPEN_METEO_LIVE"),
+            data_source_note=live.get("data_source_note"),
+        )
+
     city = db.query(City).filter(City.name == "Jaipur").first()
-    if city:
+    if city and mode != "demo":
         wx = (
             db.query(WeatherData)
             .filter(WeatherData.city_id == city.id, WeatherData.ward_id == None)
@@ -38,7 +59,14 @@ def get_current_weather(db: Session = Depends(get_db)):
                 data_source=wx.data_source.value if wx.data_source else "DEMO",
             )
 
-    # Fallback to demo provider
+    # Fallback: Live if possible, then demo provider
+    try:
+        live = fetch_live_current_weather()
+        if live.get("data_source") == "OPEN_METEO_LIVE":
+            return WeatherResponse(**live)
+    except Exception:
+        pass
+
     demo = get_base_weather()
     return WeatherResponse(
         timestamp=demo["timestamp"],
@@ -52,6 +80,33 @@ def get_current_weather(db: Session = Depends(get_db)):
         data_source="DEMO",
         data_source_note=demo.get("data_source_note"),
     )
+
+
+@router.get("/hourly-forecast", response_model=HourlyForecastResponse)
+def get_hourly_forecast(hours: int = 72):
+    """
+    Get multi-day hourly forecast with thermal stress calculations (Heat Index, WBGT, HTSI).
+    Supports 24h, 48h, or 72h early warning prediction timeline.
+    """
+    safe_hours = max(6, min(168, hours))
+    data = fetch_hourly_forecast(hours=safe_hours)
+
+    temps = [p["temperature"] for p in data] if data else [35.0]
+    htsis = [p["htsi"] for p in data] if data else [60.0]
+
+    max_temp = max(temps) if temps else 0.0
+    max_htsi = max(htsis) if htsis else 0.0
+
+    return HourlyForecastResponse(
+        city="Jaipur",
+        total_hours=len(data),
+        data_source=data[0]["data_source"] if data else "OPEN_METEO",
+        peak_risk_window="13:00 - 16:30 Daily Peak",
+        max_temperature=round(max_temp, 1),
+        max_htsi=round(max_htsi, 1),
+        hourly=[HourlyForecastPoint(**p) for p in data],
+    )
+
 
 
 @router.get("/forecast", response_model=List[ForecastDayResponse])

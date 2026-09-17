@@ -274,3 +274,33 @@ class HealthCheckResponse(BaseModel):
     timestamp: str
     version: str
     demo_mode: bool
+
+
+# ─── Hourly Forecast ────────────────────────────────────────────────────────
+
+class HourlyForecastPoint(BaseModel):
+    time: str
+    label: str
+    short_time: str
+    date: str
+    temperature: float
+    humidity: float
+    wind_speed: float
+    solar_radiation: float
+    heat_index: float
+    wbgt: float
+    utci: Optional[float] = None
+    htsi: float
+    risk_level: str
+    data_source: str
+
+
+class HourlyForecastResponse(BaseModel):
+    city: str = "Jaipur"
+    total_hours: int
+    data_source: str
+    peak_risk_window: Optional[str] = None
+    max_temperature: float
+    max_htsi: float
+    hourly: List[HourlyForecastPoint]
+

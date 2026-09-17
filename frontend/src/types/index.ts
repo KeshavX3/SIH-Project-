@@ -133,3 +133,46 @@ export interface WardDetail {
     hospitalization_risk_score: number;
   };
 }
+
+export interface HourlyForecastPoint {
+  time: string;
+  label: string;
+  short_time: string;
+  date: string;
+  temperature: number;
+  humidity: number;
+  wind_speed: number;
+  solar_radiation: number;
+  heat_index: number;
+  wbgt: number;
+  utci?: number | null;
+  htsi: number;
+  risk_level: RiskLevel | string;
+  data_source: string;
+}
+
+export interface HourlyForecastResponse {
+  city: string;
+  total_hours: number;
+  data_source: string;
+  peak_risk_window?: string;
+  max_temperature: number;
+  max_htsi: number;
+  hourly: HourlyForecastPoint[];
+}
+
+export interface HeatActionPlanProtocol {
+  tier: 'NORMAL' | 'YELLOW' | 'ORANGE' | 'RED';
+  color: string;
+  threshold_hi: string;
+  threshold_temp: string;
+  title_en: string;
+  title_hi: string;
+  municipal_actions_en: string[];
+  municipal_actions_hi: string[];
+  citizen_advisories_en: string[];
+  citizen_advisories_hi: string[];
+  vulnerable_groups_en: string[];
+  vulnerable_groups_hi: string[];
+}
+

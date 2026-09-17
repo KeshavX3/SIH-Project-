@@ -95,6 +95,9 @@ The platform integrates standard biometeorological formulas:
 ## 🚀 What Has Been Completed So Far
 
 - [x] **Backend Infrastructure:** Complete FastAPI modular architecture with routers, dependency injection, and Pydantic schemas.
+- [x] **Live Meteorological Data Ingestion (Open-Meteo Integration):** Real-time weather feed for Jaipur with automated caching and graceful fallback.
+- [x] **72-Hour Predictive Early Warning Pipeline:** Computes hourly biometeorological stress curves (Heat Index, WBGT, UTCI, HTSI) for next 24h, 48h, and 72h.
+- [x] **Bilingual NDMA Heat Action Plan (HAP):** Standard operating protocols aligned with National Disaster Management Authority guidelines in both **English and हिन्दी**.
 - [x] **Database & PostGIS:** Relational models for Wards, Demographics, Weather, ThermalMetrics, Alerts, and Hospitals.
 - [x] **Automated Data Seeder:** Automated bootstrapping script (`seed_demo.py`) that populates realistic synthetic Jaipur ward data, weather logs, and demo user accounts on startup.
 - [x] **Core Calculation Engines:**
@@ -104,11 +107,14 @@ The platform integrates standard biometeorological formulas:
 - [x] **Frontend Web Application:**
   - Responsive dark-mode UI styled with TailwindCSS and Lucide Icons.
   - **Overview Dashboard:** Real-time health metrics, active alerts, and risk level breakdown.
+  - **Predictive 72-Hour Early Warning:** Interactive line chart with 24h / 48h / 72h toggle and peak-risk window indicators.
+  - **NDMA Heat Action Protocol Modal:** Bilingual policy & citizen guidance modal.
   - **Jaipur GIS Map:** Ward polygons, color-coded heat stress indicators, and interactive ward inspector.
   - **Thermal Simulator:** Dynamic sliders for temperature, humidity, wind, and radiation with live gauge updates.
   - **Ward Analytics:** In-depth breakdown per municipal zone.
   - **Alerts Management:** Workflow to acknowledge, escalate, or resolve municipal heat warnings.
 - [x] **Dockerization:** Complete `docker-compose.yml` orchestrating Database, Backend, and Frontend.
+
 
 ---
 
