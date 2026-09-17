@@ -1,0 +1,59 @@
+# HeatGuard AI — SIH26083
+# Extreme Heatwave Early Warning & Human Thermal Stress Index
+
+# ─── Node / Frontend ───────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.parcel-cache/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ─── Python Backend ─────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+backend/.env
+
+# ─── ML Models (large binaries — store via DVC/S3 in production) ────────────
+backend/app/ml/models/*.pkl
+backend/app/ml/models/*.joblib
+ml/models/*.pkl
+ml/models/*.joblib
+
+# ─── Database ────────────────────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ─── Secrets — NEVER commit these ────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+.docker/
