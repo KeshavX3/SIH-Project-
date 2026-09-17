@@ -1,0 +1,57 @@
+{
+  "model_name": "HeatGuard Risk Classifier",
+  "version": "1.0-prototype",
+  "algorithm": "RandomForestClassifier",
+  "training_date": "2026-09-17T10:30:17.379570+00:00",
+  "features": [
+    "temperature",
+    "humidity",
+    "wind_speed",
+    "solar_radiation",
+    "heat_index",
+    "wbgt",
+    "htsi",
+    "temperature_anomaly",
+    "heatwave_duration",
+    "population_density",
+    "elderly_density",
+    "outdoor_worker_density",
+    "historical_health_indicator",
+    "vulnerability_score"
+  ],
+  "target": "risk_level",
+  "classes": [
+    "SAFE",
+    "LOW",
+    "MODERATE",
+    "HIGH",
+    "EXTREME"
+  ],
+  "n_training_samples": 5000,
+  "random_seed": 42,
+  "evaluation": {
+    "WARNING": "All metrics are evaluated on SYNTHETIC demonstration data. They do not reflect real-world predictive performance.",
+    "test_accuracy_on_synthetic_data": 0.91,
+    "cv_mean_accuracy_on_synthetic_data": 0.9222,
+    "cv_std": 0.0055,
+    "xgboost_test_accuracy": 0.963
+  },
+  "feature_importance": {
+    "htsi": 0.3218479869158596,
+    "wbgt": 0.17280812641094354,
+    "heat_index": 0.14186071763563765,
+    "temperature": 0.080031596634777,
+    "heatwave_duration": 0.06938863929033819,
+    "humidity": 0.04865308711540042,
+    "vulnerability_score": 0.038523103923373006,
+    "solar_radiation": 0.03506748738064142,
+    "temperature_anomaly": 0.02305181099720747,
+    "elderly_density": 0.019995291828633212,
+    "wind_speed": 0.01410927576147284,
+    "outdoor_worker_density": 0.013510663606141752,
+    "population_density": 0.011569192857940789,
+    "historical_health_indicator": 0.009583019641633226
+  },
+  "dataset_description": "5,000 synthetic samples generated using deterministic thermal calculations. Labels assigned by rule-based risk engine. NOT real-world health data.",
+  "model_path": "app/ml/models\\risk_model.pkl"
+}

@@ -276,9 +276,10 @@ def seed_demo_data(db: Session) -> None:
 
     # ── 5. Weather + Thermal Metrics (72h history) ────────────────────────────
     now = datetime.now(timezone.utc)
-    base_temps = {w[0].id: 38.0 + i * 1.5 for i, (w, _, _) in enumerate(ward_objs)}
+    base_temps = {w.id: 38.0 + i * 1.5 for i, (w, _, _) in enumerate(ward_objs)}
 
     for ward_obj, wdata, vuln in ward_objs:
+
         ward_id = ward_obj.id
         base_temp = base_temps[ward_id]
 

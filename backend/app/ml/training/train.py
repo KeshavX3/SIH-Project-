@@ -213,6 +213,7 @@ def train_and_save_model(model_dir: str = "app/ml/models") -> dict:
 
     report = classification_report(
         y_test, y_pred,
+        labels=list(range(len(le.classes_))),
         target_names=le.classes_,
         output_dict=True,
         zero_division=0,
