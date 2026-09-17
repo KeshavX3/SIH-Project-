@@ -6,16 +6,16 @@ import { JaipurHeatMap } from './components/map/JaipurHeatMap';
 import { ThermalSimulator } from './components/calculator/ThermalSimulator';
 import { AlertsView } from './components/alerts/AlertsView';
 import { WardAnalytics } from './components/wards/WardAnalytics';
-import { 
-  fetchDashboardSummary, 
-  fetchWards, 
+import {
+  fetchDashboardSummary,
+  fetchWards,
   fetchAlerts,
   DEMO_DASHBOARD_SUMMARY,
   DEMO_WARDS,
-  DEMO_ALERTS
+  DEMO_ALERTS,
 } from './services/api';
 import { DashboardSummary, WardListItem, AlertItem } from './types';
-import { ShieldCheck, Heart } from 'lucide-react';
+import { Heart, Flame } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -39,7 +39,7 @@ export const App: React.FC = () => {
       setAlerts(alertsData);
       setLastUpdated(new Date().toISOString());
     } catch (err) {
-      console.warn('Using cached / mock state', err);
+      console.warn('Using cached data', err);
     } finally {
       setIsRefreshing(false);
     }
@@ -47,7 +47,6 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Auto-refresh every 30 seconds
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
@@ -58,17 +57,14 @@ export const App: React.FC = () => {
   };
 
   const handleAlertAcknowledged = (updatedAlert: AlertItem) => {
-    setAlerts((prev) =>
-      prev.map((a) => (a.id === updatedAlert.id ? updatedAlert : a))
-    );
+    setAlerts((prev) => prev.map((a) => (a.id === updatedAlert.id ? updatedAlert : a)));
   };
 
   const activeAlertCount = alerts.filter((a) => a.status === 'ACTIVE').length;
 
   return (
-    <div className="min-h-screen bg-[#070A11] text-slate-100 flex flex-col selection:bg-rose-500/30 selection:text-rose-200">
-      
-      {/* Top Navbar */}
+    <div className="app-bg min-h-screen flex flex-col" style={{ color: '#f1f5f9' }}>
+
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -79,68 +75,45 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+
         {activeTab === 'overview' && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6">
             <HeroMetrics summary={summary} />
-            <RiskDistribution
-              summary={summary}
-              wards={wards}
-              onSelectWard={handleSelectWard}
-            />
+            <RiskDistribution summary={summary} wards={wards} onSelectWard={handleSelectWard} />
           </div>
         )}
 
         {activeTab === 'map' && (
-          <div className="animate-fade-in">
-            <JaipurHeatMap
-              wards={wards}
-              onSelectWard={handleSelectWard}
-            />
-          </div>
+          <JaipurHeatMap wards={wards} onSelectWard={handleSelectWard} />
         )}
 
         {activeTab === 'simulator' && (
-          <div className="animate-fade-in">
-            <ThermalSimulator />
-          </div>
+          <ThermalSimulator />
         )}
 
         {activeTab === 'wards' && (
-          <div className="animate-fade-in">
-            <WardAnalytics
-              wards={wards}
-              selectedWardId={selectedWardId}
-              onSelectWard={setSelectedWardId}
-            />
-          </div>
+          <WardAnalytics wards={wards} selectedWardId={selectedWardId} onSelectWard={setSelectedWardId} />
         )}
 
         {activeTab === 'alerts' && (
-          <div className="animate-fade-in">
-            <AlertsView
-              alerts={alerts}
-              onAlertAcknowledged={handleAlertAcknowledged}
-            />
-          </div>
+          <AlertsView alerts={alerts} onAlertAcknowledged={handleAlertAcknowledged} />
         )}
 
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-white/5 bg-[#05080E] py-5 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center space-x-2">
-            <Heart className="w-3.5 h-3.5 text-rose-500" />
-            <span className="font-medium text-slate-400">HeatGuard AI</span>
-            <span>—</span>
+      <footer className="mt-auto py-5 text-xs text-slate-600" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Flame className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-slate-500 font-medium">HeatGuard AI</span>
+            <span className="text-slate-700">—</span>
             <span>Extreme Heat Early Warning Platform</span>
           </div>
-          <div className="flex items-center gap-1 text-[11px]">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Jaipur, Rajasthan · Real-time meteorological data</span>
+          <div className="flex items-center gap-1">
+            <Heart className="w-3 h-3 text-rose-600" />
+            <span>Jaipur, Rajasthan · Real-time data</span>
           </div>
         </div>
       </footer>

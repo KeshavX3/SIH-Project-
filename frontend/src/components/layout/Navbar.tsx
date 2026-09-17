@@ -1,15 +1,5 @@
-import React from 'react';
-import { 
-  Flame, 
-  MapPin, 
-  Activity, 
-  AlertTriangle, 
-  Sliders, 
-  BarChart3, 
-  ShieldAlert, 
-  RefreshCw,
-  Cpu
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Flame, MapPin, LayoutDashboard, Map, Zap, BarChart2, Bell, RefreshCw, Wifi, Menu, X } from 'lucide-react';
 import { SystemStatus } from '../../types';
 
 interface NavbarProps {
@@ -31,64 +21,75 @@ export const Navbar: React.FC<NavbarProps> = ({
   onRefresh,
   isRefreshing,
 }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'map', label: 'Heat Map', icon: MapPin },
-    { id: 'simulator', label: 'Simulator', icon: Sliders },
-    { id: 'wards', label: 'Ward Data', icon: BarChart3 },
-    { id: 'alerts', label: 'Alerts', icon: AlertTriangle, badge: activeAlertCount },
+    { id: 'overview',   label: 'Overview',    icon: LayoutDashboard },
+    { id: 'map',        label: 'Heat Map',     icon: Map },
+    { id: 'simulator',  label: 'Simulator',    icon: Zap },
+    { id: 'wards',      label: 'Wards',        icon: BarChart2 },
+    { id: 'alerts',     label: 'Alerts',       icon: Bell, badge: activeAlertCount },
   ];
 
-  return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-white/10 bg-[#080C14]/90 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          
-          {/* Logo & City Info */}
-          <div className="flex items-center space-x-3">
-            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 p-0.5 shadow-glow-red">
-              <div className="w-full h-full bg-[#0B0F17] rounded-[10px] flex items-center justify-center">
-                <Flame className="w-5 h-5 text-rose-500 animate-pulse" />
-              </div>
-            </div>
+  const handleNav = (id: string) => {
+    setActiveTab(id);
+    setMobileOpen(false);
+  };
 
+  return (
+    <header className="sticky top-0 z-50" style={{
+      background: 'rgba(10,15,30,0.85)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      borderBottom: '1px solid rgba(255,255,255,0.07)',
+    }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-[62px]">
+
+          {/* Logo */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div style={{
+              background: 'linear-gradient(135deg, #f97316, #ef4444)',
+              borderRadius: '12px',
+              padding: '7px',
+              boxShadow: '0 4px 14px rgba(239,68,68,0.4)',
+            }}>
+              <Flame className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-display font-extrabold text-lg tracking-tight text-white">
-                  HeatGuard <span className="text-rose-500">AI</span>
-                </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">
-                  LIVE
-                </span>
+              <div className="font-bold text-white text-[15px] leading-none" style={{ fontFamily: 'Space Grotesk, Inter, sans-serif' }}>
+                HeatGuard <span className="text-gradient-fire">AI</span>
               </div>
-              <div className="flex items-center space-x-1 text-xs text-slate-400">
-                <MapPin className="w-3 h-3 text-amber-400" />
-                <span className="font-medium text-slate-300">Jaipur</span>
-                <span className="text-slate-500">•</span>
-                <span className="text-[11px] text-slate-400">Rajasthan, India</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <MapPin className="w-2.5 h-2.5 text-amber-400" />
+                <span className="text-[10px] text-slate-400">Jaipur, Rajasthan</span>
               </div>
             </div>
           </div>
 
-          {/* Nav Tabs */}
-          <nav className="hidden md:flex items-center space-x-1 bg-slate-900/60 p-1 rounded-xl border border-white/5">
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`relative flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-rose-500/20 to-amber-500/20 text-white border border-rose-500/30 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
+                  onClick={() => handleNav(item.id)}
+                  className={`nav-pill relative ${isActive ? 'active' : ''}`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-rose-400' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
+                  <Icon className="w-4 h-4" />
+                  {item.label}
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="ml-1.5 px-1.5 py-0.2 text-[10px] font-bold bg-rose-500 text-white rounded-full animate-pulse-slow">
+                    <span style={{
+                      background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                      borderRadius: '99px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '1px 6px',
+                      color: 'white',
+                      lineHeight: 1.4,
+                    }}>
                       {item.badge}
                     </span>
                   )}
@@ -97,58 +98,64 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Right Status & Actions */}
-          <div className="flex items-center space-x-3">
-            {/* System Engine Status */}
-            <div className="hidden lg:flex items-center space-x-2 px-2.5 py-1.5 bg-slate-900/80 border border-white/5 rounded-lg text-xs">
-              <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-slate-400 text-[11px]">ML Engine:</span>
-              <span className="font-mono text-[11px] font-semibold text-emerald-400">
-                {systemStatus?.ml_engine === 'READY' ? 'ONLINE' : 'ACTIVE'}
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+            {/* Live badge */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{
+              background: 'rgba(16,185,129,0.12)',
+              border: '1px solid rgba(16,185,129,0.25)',
+            }}>
+              <Wifi className="w-3 h-3 text-emerald-400" />
+              <span className="text-[11px] font-semibold text-emerald-400">LIVE</span>
             </div>
 
-            {/* Refresh Button */}
+            {/* Refresh */}
             <button
               onClick={onRefresh}
-              title={`Last updated: ${new Date(lastUpdated).toLocaleTimeString()}`}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-white/10 transition-colors"
+              title={`Updated: ${new Date(lastUpdated).toLocaleTimeString()}`}
+              className="btn-ghost flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isRefreshing ? 'animate-spin text-rose-400' : ''}`} />
-              <span className="hidden sm:inline text-[11px]">Refresh</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-400' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            {/* Mobile menu toggle */}
+            <button
+              className="md:hidden btn-ghost p-2"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
-
         </div>
+      </div>
 
-        {/* Mobile Navigation bar */}
-        <div className="flex md:hidden overflow-x-auto py-2 space-x-1 border-t border-white/5">
+      {/* Mobile dropdown */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-white/5 px-4 py-3 space-y-1" style={{ background: 'rgba(10,15,30,0.95)' }}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
-                  isActive
-                    ? 'bg-rose-500/20 text-white border border-rose-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                onClick={() => handleNav(item.id)}
+                className={`nav-pill w-full text-left ${isActive ? 'active' : ''}`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
+                <Icon className="w-4 h-4" />
+                {item.label}
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="px-1.5 text-[9px] bg-rose-500 text-white rounded-full">
-                    {item.badge}
-                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg,#f97316,#ef4444)',
+                    borderRadius: '99px', fontSize: '10px', fontWeight: 700,
+                    padding: '1px 6px', color: 'white',
+                  }}>{item.badge}</span>
                 )}
               </button>
             );
           })}
         </div>
-      </div>
+      )}
     </header>
   );
 };
